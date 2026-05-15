@@ -1,0 +1,23 @@
+{
+  "skill_name": "browser-qa",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I'm in a React/Vite app that has a docker-compose.yml and package.json. Please run a browser QA pass on the local dev deployment, check login, click through the main navigation, inspect console/network errors, and tell me what broke.",
+      "expected_output": "Uses browser-qa as the orchestrator, creates or reuses a project QA profile, performs health checks, uses real browser interactions, checks console/network failures, and reports tested paths, pass/fail results, and remaining risks.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "The admin dashboard works on desktop but users say the mobile modal is clipped and the sidebar drawer behaves weirdly. Verify it in the browser on a mobile-sized viewport and give me a focused QA report.",
+      "expected_output": "Triggers browser-qa, prioritizes mobile/responsive checks, validates drawer/sidebar and modal/dialog behavior, notes accessibility/touch-target issues, and recommends adapt/harden/polish handoffs only if needed.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Docker says all services are up, but the page is blank. Figure out whether this is a frontend routing issue, an API/base URL issue, or a backend error. Don't write Playwright tests yet, just investigate the running app.",
+      "expected_output": "Triggers browser-qa rather than Playwright test-authoring skills, runs service health checks, opens the app in a browser, inspects console/network failures and service logs, and produces a root-cause-oriented QA report.",
+      "files": []
+    }
+  ]
+}
