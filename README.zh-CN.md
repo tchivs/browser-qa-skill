@@ -124,6 +124,28 @@ Profile 可以保存 URL、健康检查命令、service 名称、登录路径、
 
 后续运行会优先读取 profile。只有文件变化、URL 失效或用户明确要求重新发现时，才刷新它。
 
+## 辅助脚本
+
+内置脚本是无依赖的 Node.js 工具，只做确定性检查。它们不会执行浏览器自动化，也不会安装全局包。
+
+创建 profile 模板：
+
+```bash
+node browser-qa/scripts/create-profile-template.mjs --mode docker-compose
+```
+
+校验项目 profile：
+
+```bash
+node browser-qa/scripts/validate-profile.mjs --profile .browser-qa/profile.json
+```
+
+发布前检查这个 skill 仓库：
+
+```bash
+node browser-qa/scripts/doctor.mjs
+```
+
 ## 工作流
 
 ```text
@@ -132,13 +154,37 @@ Profile 可以保存 URL、健康检查命令、service 名称、登录路径、
 → 关联日志 → 报告通过、失败和剩余风险
 ```
 
-该 skill 优先使用 [`agent-browser`](https://www.npmjs.com/package/agent-browser)。执行浏览器操作前，agent 会先读取 CLI 的实时指南：
+该 skill 优先使用 [`agent-browser`](https://www.npmjs.com/package/agent-browser)，但不应该假设 CLI 已安装，也不应该静默安装全局包。
+
+agent 应先检查：
+
+```bash
+command -v agent-browser
+```
+
+如果已安装，再读取 CLI 的实时指南：
 
 ```bash
 agent-browser skills get core
 ```
 
-当用户需要生成长期维护的 E2E 测试，或项目已经使用 Playwright 时，可以切换到 Playwright 流程。
+如果未安装，只有在用户明确要求设置浏览器 QA 工具时才执行安装；否则应提示缺失，或在项目已有 Playwright 工作流时回退到 Playwright。当用户需要生成长期维护的 E2E 测试时，Playwright 也是更合适的路径。
+
+## 专项 skill 转交
+
+`browser-qa` 是总控型 skill。下面这些 companion skills 是可选增强，不是使用前必须安装的依赖。即使它们不存在，`browser-qa` 也应该继续完成通用浏览器 QA；只有在后续专项工作明显需要时，才提示用户安装或使用对应 skill。
+
+| 需求 | 更适合的后续 skill |
+| --- | --- |
+| 编写长期维护的 Playwright 测试 | `playwright-best-practices` |
+| 设计 E2E 测试策略 | `e2e-testing-patterns` |
+| 完整 a11y / responsive / performance 审计 | `audit` |
+| React 修复后的代码健康检查 | `react-doctor` |
+| React 渲染或 bundle 性能优化 | `react-performance-optimization` |
+| Tailwind v4 或 shadcn/ui 问题 | `tailwind-v4-shadcn`, `shadcn-ui` |
+| 响应式布局修复 | `adapt` |
+| 边界情况、溢出、i18n、错误状态加固 | `harden` |
+| 最终视觉 polish | `polish` |
 
 ## 发布 / 排行榜
 

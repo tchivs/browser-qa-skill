@@ -19,6 +19,18 @@ The goal is to prove that a web app is usable from the browser, not merely that 
 
 Prefer the `agent-browser` CLI for browser interaction, snapshots, network inspection, and exploratory QA.
 
+Do not assume `agent-browser` is installed. Check first:
+
+```bash
+command -v agent-browser
+```
+
+If it is missing, do not silently install global packages. Tell the user it is missing and either:
+
+- ask them to install it with their preferred package manager,
+- run an explicit install command only if the user asked you to set up browser QA tooling,
+- or fall back to an existing project Playwright workflow when available.
+
 Before running browser commands, load the installed CLI's live usage guide so command syntax matches the local version:
 
 ```bash
@@ -229,6 +241,8 @@ Keep the report factual and specific. Mention the exact screen, route, or intera
 ## Specialist handoff matrix
 
 Use this skill as the orchestrator. Hand off when the task becomes more specialized:
+
+Companion skills are optional, not prerequisites. Do not block browser QA because one of these skills is not installed. If a companion skill is unavailable, continue with the generic QA workflow and mention the optional skill only when it would materially improve the follow-up work.
 
 - Need to write durable Playwright tests or a test suite -> `playwright-best-practices`
 - Need generic E2E testing strategy or suite structure -> `e2e-testing-patterns`

@@ -126,6 +126,28 @@ The profile stores URLs, health checks, service names, login paths, smoke paths,
 
 Future runs load the profile first and only refresh discovery when files changed, URLs are stale, or the user explicitly asks to rediscover the app.
 
+## Helper scripts
+
+The bundled scripts are dependency-free Node.js utilities for deterministic checks. They do not run browser automation and do not install global packages.
+
+Create a profile template:
+
+```bash
+node browser-qa/scripts/create-profile-template.mjs --mode docker-compose
+```
+
+Validate a project profile:
+
+```bash
+node browser-qa/scripts/validate-profile.mjs --profile .browser-qa/profile.json
+```
+
+Check this skill repository before publishing:
+
+```bash
+node browser-qa/scripts/doctor.mjs
+```
+
 ## How it works
 
 ```text
@@ -134,17 +156,27 @@ discover project → create/reuse QA profile → health check services
 → correlate logs → report what passed, failed, and remains risky
 ```
 
-The skill prefers [`agent-browser`](https://www.npmjs.com/package/agent-browser) for browser interaction and tells the agent to load the live CLI guide first:
+The skill prefers [`agent-browser`](https://www.npmjs.com/package/agent-browser) for browser interaction, but it should not assume the CLI is already installed or silently install global packages.
+
+The agent should check first:
+
+```bash
+command -v agent-browser
+```
+
+If it is installed, the agent should load the live CLI guide before browser actions:
 
 ```bash
 agent-browser skills get core
 ```
 
-Playwright is still a good fallback when the user asks to create durable E2E tests or when the project already has Playwright workflows.
+If it is missing, install it only when the user explicitly asks to set up browser QA tooling, or fall back to an existing project Playwright workflow when available. Playwright is also the better path when the user asks to create durable E2E tests.
 
 ## Skill handoffs
 
 `browser-qa` is the orchestrator. It should hand off when the task becomes specialized:
+
+These companion skills are optional. You do not need to install them before using `browser-qa`; the skill should still run generic browser QA without them.
 
 | Need | Better follow-up skill |
 | --- | --- |
@@ -164,8 +196,12 @@ Playwright is still a good fallback when the user asks to create durable E2E tes
 browser-qa-skill/
 ├── browser-qa/
 │   ├── SKILL.md
-│   └── evals/
-│       └── evals.json
+│   ├── evals/
+│   │   └── evals.json
+│   └── scripts/
+│       ├── create-profile-template.mjs
+│       ├── doctor.mjs
+│       └── validate-profile.mjs
 ├── README.md
 ├── README.zh-CN.md
 ├── LICENSE
