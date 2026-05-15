@@ -120,20 +120,25 @@ Use a clear repository description, for example:
 
 > General browser QA orchestrator skill for web apps, local dev stacks, and Docker Compose deployments.
 
-## Publishing to skill.sh / Agent Skill Hub
+## Publishing to skill.sh / skill rankings
 
-Current Agent Skill Hub-style publishing flows use GitHub import: publish a public repository containing one or more `SKILL.md` files, then import the repository URL from the web app or API. Importers commonly detect `SKILL.md` files in plain subdirectories such as `browser-qa/SKILL.md`.
+For skill.sh-style discovery, a public GitHub repository plus installs through the skills CLI may be enough. When users run an install command such as:
 
-Typical marketplace flow:
+```bash
+npx skills add tchivs/browser-qa-skill --skill browser-qa
+```
 
-1. Push this repository to GitHub.
-2. Open skill.sh / Agent Skill Hub.
-3. Use the Add Skills / Import Repository dialog.
-4. Paste the public GitHub repository URL.
-5. Select the detected `browser-qa` skill.
-6. Re-import after future GitHub commits to publish updates.
+the skills ecosystem may use anonymous install telemetry to discover the skill and rank it by installation count. In that model, there is no separate manual upload step: make the repository public, ensure the skill is installable, share the install command, and installations drive visibility.
 
-If your target registry instead requires a packaged `.skill` artifact or GitHub release, package the `browser-qa/` directory and follow that registry's current upload instructions.
+Keep the repository compatible with import-based registries too:
+
+1. Push a public GitHub repository containing `browser-qa/SKILL.md`.
+2. Ensure `SKILL.md` has parseable YAML frontmatter with `name` and `description`.
+3. Use a directory name that matches the skill name: `browser-qa/`.
+4. Share the install command: `npx skills add tchivs/browser-qa-skill --skill browser-qa`.
+5. If a registry offers Add Skills / Import Repository, paste the GitHub repository URL there as an optional extra step.
+
+If a target registry instead requires a packaged `.skill` artifact or GitHub release, package the `browser-qa/` directory and follow that registry's current upload instructions.
 
 ## 中文
 
@@ -255,17 +260,22 @@ gh repo create browser-qa-skill --public --source=. --remote=origin --push
 
 > General browser QA orchestrator skill for web apps, local dev stacks, and Docker Compose deployments.
 
-## 发布到 skill.sh / Agent Skill Hub
+## 发布到 skill.sh / 技能排行榜
 
-当前 Agent Skill Hub 类发布流程通常是 GitHub import：先发布一个包含 `SKILL.md` 的公开 GitHub 仓库，然后在网页或 API 中导入仓库 URL。导入器通常会扫描 `browser-qa/SKILL.md` 这样的普通子目录。
+对于 skill.sh 这类发现机制，公开 GitHub 仓库加上用户通过 skills CLI 安装可能就足够了。当用户运行：
 
-典型 marketplace 流程：
+```bash
+npx skills add tchivs/browser-qa-skill --skill browser-qa
+```
 
-1. 推送这个仓库到 GitHub。
-2. 打开 skill.sh / Agent Skill Hub。
-3. 使用 Add Skills / Import Repository 入口。
-4. 粘贴公开 GitHub 仓库 URL。
-5. 选择检测到的 `browser-qa` skill。
-6. 后续 GitHub 更新后，重新 import 即可发布新版本。
+skills 生态可能会通过匿名安装遥测发现这个 skill，并按安装次数进入排行榜。在这种模式下，不一定需要单独手动上传：把仓库设为公开，确保可以被 CLI 安装，传播安装命令，安装量会带来曝光。
+
+为了兼容导入型 registry，仍建议保持：
+
+1. 推送包含 `browser-qa/SKILL.md` 的公开 GitHub 仓库。
+2. `SKILL.md` 的 YAML frontmatter 必须能解析，并包含 `name` 和 `description`。
+3. 目录名和 skill 名一致：`browser-qa/`。
+4. 分享安装命令：`npx skills add tchivs/browser-qa-skill --skill browser-qa`。
+5. 如果某个 registry 提供 Add Skills / Import Repository，也可以把 GitHub 仓库 URL 粘贴进去作为补充步骤。
 
 如果目标网站要求 `.skill` 包或 GitHub Release，则打包 `browser-qa/` 目录并按该网站当前说明上传。
