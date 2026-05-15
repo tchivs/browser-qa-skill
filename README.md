@@ -14,19 +14,62 @@ Works with local dev servers, Docker Compose stacks, deployed URLs, React/Vite/N
 
 ## Install
 
-Install from GitHub with the skills CLI:
+Install from GitHub with the skills CLI.
+
+Global install:
+
+```bash
+npx skills add tchivs/browser-qa-skill --skill browser-qa -g
+```
+
+Project install:
 
 ```bash
 npx skills add tchivs/browser-qa-skill --skill browser-qa
 ```
 
-For OpenCode manual install:
+For OpenCode, the easiest manual install is to ask your agent to install it for you.
+
+Global OpenCode prompt:
+
+```text
+Install the browser-qa skill globally for OpenCode from this GitHub repository:
+https://github.com/tchivs/browser-qa-skill
+
+Use browser-qa/SKILL.md as the source file and install it to:
+~/.config/opencode/skills/browser-qa/SKILL.md
+
+Also copy browser-qa/evals/ if supported. Do not modify the skill content.
+```
+
+Project OpenCode prompt:
+
+```text
+Install the browser-qa skill for this project from this GitHub repository:
+https://github.com/tchivs/browser-qa-skill
+
+Use browser-qa/SKILL.md as the source file and install it to:
+.opencode/skills/browser-qa/SKILL.md
+
+Also copy browser-qa/evals/ if supported. Do not modify the skill content.
+```
+
+Shell fallback, global:
 
 ```bash
 git clone https://github.com/tchivs/browser-qa-skill.git
 mkdir -p ~/.config/opencode/skills/browser-qa
 cp browser-qa-skill/browser-qa/SKILL.md ~/.config/opencode/skills/browser-qa/SKILL.md
 cp -R browser-qa-skill/browser-qa/evals ~/.config/opencode/skills/browser-qa/evals
+```
+
+Shell fallback, project:
+
+```bash
+git clone https://github.com/tchivs/browser-qa-skill.git /tmp/browser-qa-skill
+mkdir -p .opencode/skills/browser-qa
+cp /tmp/browser-qa-skill/browser-qa/SKILL.md .opencode/skills/browser-qa/SKILL.md
+cp -R /tmp/browser-qa-skill/browser-qa/evals .opencode/skills/browser-qa/evals
 ```
 
 ## Use
@@ -165,19 +208,62 @@ Issues and PRs are welcome. Good improvements include:
 
 ## 安装
 
-通过 skills CLI 安装：
+通过 skills CLI 安装。
+
+全局安装：
+
+```bash
+npx skills add tchivs/browser-qa-skill --skill browser-qa -g
+```
+
+项目安装：
 
 ```bash
 npx skills add tchivs/browser-qa-skill --skill browser-qa
 ```
 
-OpenCode 手动全局安装：
+OpenCode 手动安装时，更推荐直接发给 OpenCode 一段话，让它帮你装。
+
+全局 OpenCode 安装 prompt：
+
+```text
+请从这个 GitHub 仓库为 OpenCode 全局安装 browser-qa skill：
+https://github.com/tchivs/browser-qa-skill
+
+使用 browser-qa/SKILL.md 作为源文件，安装到：
+~/.config/opencode/skills/browser-qa/SKILL.md
+
+如果支持，也一起复制 browser-qa/evals/。不要修改 skill 内容。
+```
+
+项目 OpenCode 安装 prompt：
+
+```text
+请从这个 GitHub 仓库为当前项目安装 browser-qa skill：
+https://github.com/tchivs/browser-qa-skill
+
+使用 browser-qa/SKILL.md 作为源文件，安装到：
+.opencode/skills/browser-qa/SKILL.md
+
+如果支持，也一起复制 browser-qa/evals/。不要修改 skill 内容。
+```
+
+Shell 兜底方式，全局：
 
 ```bash
 git clone https://github.com/tchivs/browser-qa-skill.git
 mkdir -p ~/.config/opencode/skills/browser-qa
 cp browser-qa-skill/browser-qa/SKILL.md ~/.config/opencode/skills/browser-qa/SKILL.md
 cp -R browser-qa-skill/browser-qa/evals ~/.config/opencode/skills/browser-qa/evals
+```
+
+Shell 兜底方式，项目：
+
+```bash
+git clone https://github.com/tchivs/browser-qa-skill.git /tmp/browser-qa-skill
+mkdir -p .opencode/skills/browser-qa
+cp /tmp/browser-qa-skill/browser-qa/SKILL.md .opencode/skills/browser-qa/SKILL.md
+cp -R /tmp/browser-qa-skill/browser-qa/evals .opencode/skills/browser-qa/evals
 ```
 
 ## 使用示例
