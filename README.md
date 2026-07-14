@@ -8,7 +8,7 @@
   <a href="https://github.com/tchivs/browser-qa-skill/stargazers"><img src="https://img.shields.io/github/stars/tchivs/browser-qa-skill?style=flat-square&logo=github&label=Stars" alt="GitHub Stars"></a>
   <a href="https://github.com/tchivs/browser-qa-skill/commits/main"><img src="https://img.shields.io/github/last-commit/tchivs/browser-qa-skill?style=flat-square&label=Last%20commit" alt="Last commit"></a>
   <a href="./LICENSE"><img src="https://img.shields.io/github/license/tchivs/browser-qa-skill?style=flat-square" alt="MIT License"></a>
-  <img src="https://img.shields.io/badge/Profile%20Schema-v2-2563eb?style=flat-square" alt="Profile Schema v2">
+  <img src="https://img.shields.io/badge/Profile%20Schema-v3-2563eb?style=flat-square" alt="Profile Schema v2">
   <img src="https://img.shields.io/badge/Node.js-%E2%89%A518-339933?style=flat-square&logo=nodedotjs&logoColor=white" alt="Node.js 18+">
 </p>
 
@@ -167,7 +167,7 @@ Profile 可以保存：
 - 登录路径、公共/认证/管理员冒烟路径
 - 凭据的**来源引用**，例如 `QA_ADMIN_PASSWORD`
 - 日志命令、viewport、发现证据和最后验证时间
-- 生产安全策略与资源清理策略
+- 生产安全策略、资源清理策略与每个测试范围的就绪状态
 
 Profile **不得保存**密码、Token、Cookie、Authorization Header、私钥或其他生产秘密。
 
@@ -185,6 +185,36 @@ node browser-qa/scripts/create-profile-template.mjs \
 node browser-qa/scripts/validate-profile.mjs \
   --profile .browser-qa/profile.json
 ```
+
+## 分区就绪与运行 Manifest
+
+Profile v3 不再用一个总开关代表全部 QA，而是分别声明：
+
+```json
+"readiness": {
+  "public": "ready",
+  "authenticated": "blocked",
+  "admin": "n/a"
+}
+```
+
+这意味着：公共页面已经确认环境后可以测试；账号尚未解析时，认证范围必须保持 `blocked`；没有管理员路径时使用 `n/a`。不允许把未就绪范围报告为通过。
+
+每次开始 QA 前创建运行 Manifest：
+
+```bash
+node browser-qa/scripts/create-run-manifest.mjs \
+  --profile .browser-qa/profile.json
+```
+
+Manifest 固化本轮的环境、Profile 哈希、目标 URL、范围、viewport、证据、重试和清理记录。完成后校验：
+
+```bash
+node browser-qa/scripts/validate-run-manifest.mjs \
+  --manifest .browser-qa/runs/<run-id>/manifest.json
+```
+
+默认最多重试一次，并且只允许重试幂等操作；提交、购买、发送、创建、删除和修改操作不自动重试。首次失败后重试成功仍须标记为 `FLAKY`。
 
 ## 安全策略
 
@@ -221,6 +251,11 @@ node browser-qa/scripts/validate-profile.mjs --profile .browser-qa/profile.json
 
 # 运行 Profile 校验器回归测试
 node browser-qa/scripts/test-profile-validator.mjs
+
+# 创建和校验单次 QA 运行 Manifest
+node browser-qa/scripts/create-run-manifest.mjs --profile .browser-qa/profile.json
+node browser-qa/scripts/validate-run-manifest.mjs --manifest .browser-qa/runs/<run-id>/manifest.json
+node browser-qa/scripts/test-run-manifest.mjs
 
 # 发布前检查 Skill 仓库
 node browser-qa/scripts/doctor.mjs
@@ -262,6 +297,9 @@ browser-qa-skill/
 │       ├── create-profile-template.mjs
 │       ├── validate-profile.mjs
 │       ├── test-profile-validator.mjs
+│       ├── create-run-manifest.mjs
+│       ├── validate-run-manifest.mjs
+│       ├── test-run-manifest.mjs
 │       └── doctor.mjs
 ├── README.md          # 中文主文档
 ├── README.en.md       # English documentation

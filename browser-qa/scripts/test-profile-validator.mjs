@@ -17,6 +17,14 @@ try {
   process.env.QA_ADMIN_PASSWORD = "qa-password";
   await expectResult("ready local profile passes", readyProfile(), true);
 
+  const badReadiness = readyProfile();
+  badReadiness.readiness.authenticated = "n/a";
+  await expectResult("protected scope cannot be n/a", badReadiness, false);
+
+  const badRetryPolicy = readyProfile();
+  badRetryPolicy.run_policy.max_idempotent_retries = 2;
+  await expectResult("retry policy rejects more than one retry", badRetryPolicy, false);
+
   const incomplete = readyProfile();
   incomplete.project_name = "TODO";
   incomplete.discovery.status = "blocked";
@@ -94,7 +102,7 @@ async function expectResult(name, profile, shouldPass) {
 
 function readyProfile() {
   return {
-    schema_version: 2,
+    schema_version: 3,
     project_name: "sample-app",
     project_root: ".",
     environment: "local",
@@ -119,6 +127,8 @@ function readyProfile() {
       seed_or_setup_command: null
     },
     qa_paths: { public: ["/", "/signin"], authenticated: ["/dashboard"], admin: [] },
+    readiness: { public: "ready", authenticated: "ready", admin: "n/a" },
+    run_policy: { max_idempotent_retries: 1, evidence_root: ".browser-qa/runs" },
     viewports: [{ name: "desktop", width: 1440, height: 900 }],
     log_sources: { commands: ["docker compose logs --tail=200"], notes: [] },
     discovery: {

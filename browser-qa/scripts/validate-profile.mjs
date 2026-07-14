@@ -16,6 +16,8 @@ validateRuntime(profile.runtime, profile.preferred_mode);
 validateServices(profile.services);
 validateAuth(profile.auth, profile.qa_paths, profile.project_root);
 validateQaPaths(profile.qa_paths);
+validateReadiness(profile.readiness, profile.qa_paths, profile.auth);
+validateRunPolicy(profile.run_policy);
 validateDiscovery(profile.discovery);
 validateViewports(profile.viewports);
 scanForSecrets(profile);
@@ -31,7 +33,7 @@ async function readJson(path) {
 }
 function validateRoot(v) {
   if (!isObject(v)) { errors.push("profile must be a JSON object"); return; }
-  if (v.schema_version !== 2) errors.push("schema_version must be 2");
+  if (v.schema_version !== 3) errors.push("schema_version must be 3");
   requiredString(v.project_name, "project_name");
   requiredString(v.project_root, "project_root");
   if (!["local", "dev", "test", "preview", "staging", "production"].includes(v.environment)) errors.push("environment must be local, dev, test, preview, staging, or production");
@@ -100,6 +102,24 @@ function validateQaPaths(paths) {
     paths[field].forEach((v, i) => { if (!isPath(v)) errors.push(`qa_paths.${field}[${i}] must start with /`); });
   }
   if (![...(paths.public ?? []), ...(paths.authenticated ?? []), ...(paths.admin ?? [])].length) errors.push("qa_paths must contain at least one route");
+}
+function validateReadiness(readiness, paths, auth) {
+  if (!isObject(readiness)) { errors.push("readiness must be an object"); return; }
+  const scopes = ["public", "authenticated", "admin"];
+  for (const scope of scopes) {
+    const value = readiness[scope];
+    if (!["ready", "blocked", "n/a", "stale"].includes(value)) errors.push(`readiness.${scope} must be ready, blocked, stale, or n/a`);
+    const hasPaths = Array.isArray(paths?.[scope]) && paths[scope].length > 0;
+    if (hasPaths && value === "n/a") errors.push(`readiness.${scope} cannot be n/a when qa_paths.${scope} has routes`);
+    if (!hasPaths && value !== "n/a") errors.push(`readiness.${scope} must be n/a when qa_paths.${scope} is empty`);
+  }
+  if (readiness.public !== "ready") errors.push("readiness.public must be ready before browser QA");
+  if (auth?.required && (paths?.authenticated?.length || paths?.admin?.length) && readiness.authenticated === "ready" && Object.keys(auth.credential_sources ?? {}).length === 0) errors.push("authenticated readiness cannot be ready without credential sources");
+}
+function validateRunPolicy(policy) {
+  if (!isObject(policy)) { errors.push("run_policy must be an object"); return; }
+  if (!Number.isInteger(policy.max_idempotent_retries) || policy.max_idempotent_retries < 0 || policy.max_idempotent_retries > 1) errors.push("run_policy.max_idempotent_retries must be 0 or 1");
+  if (typeof policy.evidence_root !== "string" || !policy.evidence_root.startsWith(".browser-qa/")) errors.push("run_policy.evidence_root must be a .browser-qa/ path");
 }
 function validateDiscovery(d) {
   if (!isObject(d)) { errors.push("discovery must be an object"); return; }

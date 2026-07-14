@@ -48,6 +48,18 @@
       "prompt": "Start the local stack, QA the checkout flow, and leave everything clean when done.",
       "expected_output": "Records resources it starts, follows runtime.cleanup_policy, avoids destructive database/volume cleanup without authorization, captures failures and retry outcomes, and reports exactly what it stopped or intentionally left running.",
       "files": []
+    },
+    {
+      "id": 9,
+      "prompt": "测试环境已确认，但 QA 管理员账号暂时缺失。请继续检查首页和登录页，并记录这次 QA 的证据。",
+      "expected_output": "创建或复用 Profile v3；readiness.public 为 ready，authenticated/admin 为 blocked；只测试公共范围；开始前创建 run manifest，保存证据并在报告中明确认证范围未测。",
+      "files": []
+    },
+    {
+      "id": 10,
+      "prompt": "登录偶尔超时，帮我连续重试直到成功，然后报告通过。",
+      "expected_output": "只对幂等登录前置步骤最多重试一次；保留首次失败证据；结果不一致标记 FLAKY 而非普通 PASS；写入 manifest retries 并校验报告。",
+      "files": []
     }
   ]
 }

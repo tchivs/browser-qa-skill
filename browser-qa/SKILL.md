@@ -1,7 +1,7 @@
 ---
 name: browser-qa
 description: "Use whenever the user asks to QA, test, verify, click through, dogfood, smoke-test, or regression-test a website/web app; check login, admin/authenticated flows, responsive UI, browser console/network errors; or validate a local dev server, Docker Compose stack, staging/production deployment, frontend URL, or API-backed UI. Mandatory orchestrator: discover and persist the project QA profile, deployment method, URLs, health checks, and credential sources before opening the browser. Never guess startup commands, URLs, accounts, or passwords."
-version: 2.0.0
+version: 3.0.0
 author: tchivs
 license: MIT
 compatibility: hermes-agent, opencode, claude-code, codex, cursor
@@ -112,7 +112,7 @@ Use at least this shape; add project-specific fields when useful:
 
 ```json
 {
-  "schema_version": 2,
+  "schema_version": 3,
   "project_name": "example-app",
   "project_root": ".",
   "environment": "local",
@@ -153,6 +153,15 @@ Use at least this shape; add project-specific fields when useful:
     "authenticated": ["/dashboard"],
     "admin": []
   },
+  "readiness": {
+    "public": "ready",
+    "authenticated": "blocked",
+    "admin": "n/a"
+  },
+  "run_policy": {
+    "max_idempotent_retries": 1,
+    "evidence_root": ".browser-qa/runs"
+  },
   "log_sources": {
     "commands": ["docker compose logs --tail=200 web api"]
   },
@@ -167,7 +176,7 @@ Use at least this shape; add project-specific fields when useful:
 }
 ```
 
-Use `discovery.status` values: `ready`, `partial`, or `blocked`. Browser QA must not start when a required gate leaves status `partial` or `blocked`.
+Use `discovery.status` values: `ready`, `partial`, or `blocked`. Add a scope-specific `readiness` map: `public`, `authenticated`, and `admin` each use `ready`, `blocked`, `stale`, or `n/a`. Public QA may begin only when `readiness.public` is `ready`; authentication/admin paths run only when that exact scope is `ready`. This permits a truthful public-only QA run while credentials are unavailable.
 
 ## Discovery Workflow
 
@@ -259,14 +268,21 @@ Do not reset databases, reseed shared environments, run migrations, stop shared 
 
 Use a fresh browser context/profile for each environment unless the project profile explicitly points to an approved reusable storage state. Never mix local, staging, and production cookies. Clear or close temporary browser state after the run.
 
-Assign a run ID and store evidence under `.browser-qa/runs/<run-id>/` when filesystem access is available. Keep at least:
+Assign a run ID and create `.browser-qa/runs/<run-id>/manifest.json` before browser actions when filesystem access is available:
 
-- `report.md` or `report.json`
-- screenshots for failures
-- sanitized console/network excerpts
-- tested route/viewport matrix
+```bash
+node browser-qa/scripts/create-run-manifest.mjs --profile .browser-qa/profile.json
+```
 
-For every failure, capture route, viewport, exact steps, expected result, actual result, and supporting evidence. A retry may classify a symptom as flaky, but must not erase the first failure. Report retry count and both outcomes.
+The manifest is the execution contract: it records profile hash, environment, target URLs, scope readiness, viewport matrix, results, evidence, retries, and cleanup. Validate it before reporting completion:
+
+```bash
+node browser-qa/scripts/validate-run-manifest.mjs --manifest .browser-qa/runs/<run-id>/manifest.json
+```
+
+Keep at least a report, failure screenshots, sanitized console/network excerpts, and tested route/viewport matrix.
+
+For every failure, capture route, viewport, exact steps, expected result, actual result, and supporting evidence. The default retry budget is one retry and only for idempotent actions. Never retry purchase, create, delete, update, submit, send, or other non-idempotent actions automatically. A retry may classify a symptom as `FLAKY`, but must not erase the first failure; two different outcomes are reported as `FLAKY`, not ordinary `PASS`.
 
 ## Browser Execution
 

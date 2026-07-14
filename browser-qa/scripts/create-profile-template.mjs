@@ -33,7 +33,7 @@ console.log("Template is intentionally blocked. Replace TODO values, add evidenc
 
 function createProfile(selectedMode, selectedEnvironment) {
   const base = {
-    schema_version: 2,
+    schema_version: 3,
     project_name: "TODO",
     project_root: ".",
     environment: selectedEnvironment,
@@ -59,6 +59,8 @@ function createProfile(selectedMode, selectedEnvironment) {
       seed_or_setup_command: null
     },
     qa_paths: { public: ["/"], authenticated: [], admin: [] },
+    readiness: { public: "blocked", authenticated: "n/a", admin: "n/a" },
+    run_policy: { max_idempotent_retries: 1, evidence_root: ".browser-qa/runs" },
     viewports: [
       { name: "desktop", width: 1440, height: 900 },
       { name: "mobile", width: 390, height: 844 }
