@@ -118,6 +118,7 @@ Use at least this shape; add project-specific fields when useful:
   "environment": "local",
   "safety": {
     "destructive_actions_allowed": false,
+    "read_only": true,
     "test_data_prefix": "qa-"
   },
   "preferred_mode": "docker-compose",
@@ -203,6 +204,8 @@ Update the profile only with verified URLs. If startup fails, inspect logs and f
 
 Search for credential sources in this order:
 
+A credential reference is not resolved merely because an environment-variable name or file path is present. Before authenticated QA, verify the referenced environment variable exists, the authorized secret file is readable, or the user-provided source is explicitly marked resolved for this run. Never print its value.
+
 1. already-exported QA/test environment variables named by the project
 2. `.browser-qa/env.local` (load without printing)
 3. documented development/test accounts
@@ -246,7 +249,7 @@ Classify the target before actions:
 
 - `local`, `dev`, `test`, `preview`: normal QA actions are allowed within user scope.
 - `staging`: avoid destructive workflows unless explicitly included.
-- `production`: default to read-only smoke checks. Do not submit purchases, send messages, delete/update data, create real accounts, trigger billing, upload sensitive files, or run load tests without explicit authorization.
+- `production`: require `safety.read_only: true` and default to read-only smoke checks. Do not submit purchases, send messages, delete/update data, create real accounts, trigger billing, upload sensitive files, or run load tests without explicit authorization.
 
 Use unique synthetic test data and the least-privileged test account available. Never reuse a production administrator when a QA role exists. Redact personal data, secrets, cookies, authorization headers, and tokens from screenshots, browser/network dumps, logs, and reports.
 

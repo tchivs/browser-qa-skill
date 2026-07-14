@@ -13,6 +13,8 @@ const dir = await mkdtemp(join(tmpdir(), "browser-qa-validator-"));
 let failures = 0;
 
 try {
+  process.env.QA_ADMIN_USERNAME = "qa-user";
+  process.env.QA_ADMIN_PASSWORD = "qa-password";
   await expectResult("ready local profile passes", readyProfile(), true);
 
   const incomplete = readyProfile();
@@ -40,6 +42,32 @@ try {
   authMismatch.auth.strategy = "none";
   authMismatch.auth.credential_sources = {};
   await expectResult("protected routes require authentication", authMismatch, false);
+
+  const unresolvedEnv = readyProfile();
+  unresolvedEnv.auth.credential_sources.password.name = "QA_MISSING_PASSWORD";
+  delete process.env.QA_MISSING_PASSWORD;
+  await expectResult("unresolved credential env fails closed", unresolvedEnv, false);
+
+  const urlCredential = readyProfile();
+  urlCredential.services[0].url = "https://admin:supersecret@example.org";
+  await expectResult("URL embedded credentials are rejected", urlCredential, false);
+
+  const awsSecret = readyProfile();
+  awsSecret.notes = ["AKIAIOSFODNN7EXAMPLE"];
+  await expectResult("AWS access key is rejected", awsSecret, false);
+
+  const invalidDate = readyProfile();
+  invalidDate.discovery.last_verified_at = "not-a-date";
+  await expectResult("invalid verification timestamp is rejected", invalidDate, false);
+
+  const unsafeProductionReadOnly = readyProfile();
+  unsafeProductionReadOnly.environment = "production";
+  unsafeProductionReadOnly.preferred_mode = "deployed";
+  unsafeProductionReadOnly.runtime.start_commands = [];
+  unsafeProductionReadOnly.runtime.cleanup_policy = "leave-running";
+  unsafeProductionReadOnly.safety.read_only = false;
+  unsafeProductionReadOnly.services[0].url = "https://prod.example.org";
+  await expectResult("production requires read-only policy", unsafeProductionReadOnly, false);
 } finally {
   await rm(dir, { recursive: true, force: true });
 }
@@ -70,7 +98,7 @@ function readyProfile() {
     project_name: "sample-app",
     project_root: ".",
     environment: "local",
-    safety: { destructive_actions_allowed: false, test_data_prefix: "qa-" },
+    safety: { destructive_actions_allowed: false, read_only: true, test_data_prefix: "qa-" },
     preferred_mode: "docker-compose",
     runtime: {
       working_directory: ".",

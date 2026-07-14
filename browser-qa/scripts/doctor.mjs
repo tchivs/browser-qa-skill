@@ -9,7 +9,8 @@ const skillDir = resolve(root, "browser-qa");
 const skillPath = resolve(skillDir, "SKILL.md");
 const evalsPath = resolve(skillDir, "evals/evals.json");
 const readmePath = resolve(root, "README.md");
-const zhReadmePath = resolve(root, "README.zh-CN.md");
+const englishReadmePath = resolve(root, "README.en.md");
+const legacyZhReadmePath = resolve(root, "README.zh-CN.md");
 const licensePath = resolve(root, "LICENSE");
 
 const errors = [];
@@ -69,15 +70,19 @@ async function checkEvals() {
 }
 
 async function checkDocs() {
-  if (!existsSync(readmePath)) errors.push("README.md is missing");
-  if (!existsSync(zhReadmePath)) warnings.push("README.zh-CN.md is missing");
+  if (!existsSync(readmePath)) errors.push("README.md (Chinese primary documentation) is missing");
+  if (!existsSync(englishReadmePath)) errors.push("README.en.md is missing");
+  if (!existsSync(legacyZhReadmePath)) warnings.push("README.zh-CN.md compatibility redirect is missing");
   if (!existsSync(readmePath)) return;
   const readme = await readFile(readmePath, "utf8");
   for (const expected of [
     "npx skills add tchivs/browser-qa-skill --skill browser-qa -g",
     "npx skills add tchivs/browser-qa-skill --skill browser-qa",
-    "README.zh-CN.md",
-    "browser-qa/SKILL.md"
+    "README.en.md",
+    "browser-qa/SKILL.md",
+    "强制就绪门禁",
+    "Profile%20Schema-v2",
+    "Hermes%20Agent-ready"
   ]) {
     if (!readme.includes(expected)) errors.push(`README.md missing expected text: ${expected}`);
   }

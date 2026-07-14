@@ -39,6 +39,7 @@ function createProfile(selectedMode, selectedEnvironment) {
     environment: selectedEnvironment,
     safety: {
       destructive_actions_allowed: false,
+      read_only: true,
       test_data_prefix: "qa-"
     },
     preferred_mode: selectedMode,

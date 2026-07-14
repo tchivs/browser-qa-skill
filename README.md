@@ -1,246 +1,285 @@
-# browser-qa
+# Browser QA Skill
 
-[![GitHub repo](https://img.shields.io/badge/GitHub-tchivs%2Fbrowser--qa--skill-181717?style=flat&logo=github)](https://github.com/tchivs/browser-qa-skill)
-[![Skill](https://img.shields.io/badge/skill-browser--qa-000000?style=flat)](./browser-qa/SKILL.md)
-[![OpenCode](https://img.shields.io/badge/OpenCode-ready-000000?style=flat)](https://opencode.ai/docs/skills/)
-[![agent-browser](https://img.shields.io/badge/agent--browser-supported-000000?style=flat)](https://www.npmjs.com/package/agent-browser)
-[![Install](https://img.shields.io/badge/install-npx%20skills%20add-000000?style=flat)](#install)
-[![License: MIT](https://img.shields.io/badge/license-MIT-000000?style=flat)](./LICENSE)
+<p align="center">
+  <strong>让 AI Agent 在开始浏览器测试前，先搞清楚：项目怎么启动、测哪个环境、账号从哪里来。</strong>
+</p>
 
-[中文文档](./README.zh-CN.md)
+<p align="center">
+  <a href="https://github.com/tchivs/browser-qa-skill/stargazers"><img src="https://img.shields.io/github/stars/tchivs/browser-qa-skill?style=flat-square&logo=github&label=Stars" alt="GitHub Stars"></a>
+  <a href="https://github.com/tchivs/browser-qa-skill/commits/main"><img src="https://img.shields.io/github/last-commit/tchivs/browser-qa-skill?style=flat-square&label=Last%20commit" alt="Last commit"></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/github/license/tchivs/browser-qa-skill?style=flat-square" alt="MIT License"></a>
+  <img src="https://img.shields.io/badge/Profile%20Schema-v2-2563eb?style=flat-square" alt="Profile Schema v2">
+  <img src="https://img.shields.io/badge/Node.js-%E2%89%A518-339933?style=flat-square&logo=nodedotjs&logoColor=white" alt="Node.js 18+">
+</p>
 
-Your agent says "the app works". This makes it prove it in a browser.
+<p align="center">
+  <img src="https://img.shields.io/badge/Hermes%20Agent-ready-6d28d9?style=flat-square" alt="Hermes Agent ready">
+  <img src="https://img.shields.io/badge/OpenCode-ready-111827?style=flat-square" alt="OpenCode ready">
+  <img src="https://img.shields.io/badge/Claude%20Code-ready-d97757?style=flat-square" alt="Claude Code ready">
+  <img src="https://img.shields.io/badge/Codex-ready-10a37f?style=flat-square" alt="Codex ready">
+  <a href="https://www.npmjs.com/package/agent-browser"><img src="https://img.shields.io/badge/agent--browser-supported-0f172a?style=flat-square" alt="agent-browser supported"></a>
+</p>
 
-`browser-qa` is an agent skill for real browser QA. It checks the app like a user would: services are up, pages render, login works, navigation is clickable, modals fit on mobile, console errors are visible, failed requests are investigated, and backend logs are part of the story.
+<p align="center">
+  <strong>中文</strong> · <a href="./README.en.md">English</a> · <a href="./browser-qa/SKILL.md">查看 Skill</a> · <a href="https://github.com/tchivs/browser-qa-skill/issues">反馈问题</a>
+</p>
 
-Works with local dev servers, Docker Compose stacks, deployed URLs, React/Vite/Next apps, admin dashboards, and most browser-based products.
+---
 
-## Install
+## 为什么需要它
 
-Global install:
+很多 Agent 收到“帮我 QA 一下”后，会直接猜一个 `localhost` 端口、随便启动服务，甚至不知道账号密码就开始点页面。最终得到的往往不是 QA 结果，而是一份建立在错误环境上的报告。
+
+`browser-qa` 是一个面向 Web 应用的浏览器 QA 总控 Skill。它把流程改成：
+
+```text
+项目发现 → 保存 QA Profile → 验证部署与健康状态
+→ 解析认证来源 → 隔离浏览器会话 → 执行真实交互
+→ 收集证据 → 清理本轮资源 → 输出报告
+```
+
+**核心原则：部署方式、目标 URL 和认证来源没有确认之前，不得假装已经完成 QA。**
+
+## 主要能力
+
+| 能力 | 说明 |
+| --- | --- |
+| 自动发现项目 | 从 README、运行脚本、Compose、环境变量示例、框架配置和种子数据中提取 QA 配置 |
+| 持久化 QA Profile | 将非敏感环境信息保存到 `.browser-qa/profile.json`，后续优先复用 |
+| Fail-closed 门禁 | TODO、缺失证据、未确认 URL、认证配置矛盾等情况不能通过校验 |
+| 部署验证 | 支持本地开发、Docker Compose 和已部署环境；容器 `Up` 不等于页面可用 |
+| 认证流程 | 解析环境变量、秘密文件、初始化命令或授权会话；绝不猜账号密码 |
+| 安全边界 | 生产环境默认只读，不自动执行购买、删除、发信、上传、迁移或清库 |
+| 浏览器 QA | 检查页面渲染、登录、导航、表单、弹窗、移动端、Console 和失败请求 |
+| 证据与清理 | 记录失败截图、脱敏日志、重试结果，以及本轮启动资源的清理情况 |
+
+## 适用场景
+
+- 本地 dev server、Docker Compose、预览、测试、预发布或生产环境冒烟测试
+- React、Vite、Next.js、Vue、Nuxt、后台管理系统及 API 驱动的 Web 应用
+- 登录、管理员权限、导航、表单、列表、弹窗和响应式布局验证
+- “容器都正常但页面空白”的前端、API Base URL、CORS 或后端故障定位
+- 前后端修改后的浏览器回归检查
+
+不适合直接替代：单元测试、性能压测或长期维护的 Playwright 测试套件。此类任务应在环境确认后转交专项工具。
+
+## 安装
+
+### Skills CLI（推荐）
+
+全局安装：
 
 ```bash
 npx skills add tchivs/browser-qa-skill --skill browser-qa -g
 ```
 
-Project install:
+安装到当前项目：
 
 ```bash
 npx skills add tchivs/browser-qa-skill --skill browser-qa
 ```
 
-For OpenCode, the easiest manual install is to ask your agent to install it for you.
+### Hermes Agent
 
-Global OpenCode prompt:
-
-```text
-Install the browser-qa skill globally for OpenCode from this GitHub repository:
-https://github.com/tchivs/browser-qa-skill
-
-Use browser-qa/SKILL.md as the source file and install it to:
-~/.config/opencode/skills/browser-qa/SKILL.md
-
-Also copy browser-qa/evals/ if supported. Do not modify the skill content.
-```
-
-Project OpenCode prompt:
+将 `browser-qa/` 目录复制到 Hermes 用户 Skill 目录：
 
 ```text
-Install the browser-qa skill for this project from this GitHub repository:
-https://github.com/tchivs/browser-qa-skill
-
-Use browser-qa/SKILL.md as the source file and install it to:
-.opencode/skills/browser-qa/SKILL.md
-
-Also copy browser-qa/evals/ if supported. Do not modify the skill content.
+~/.hermes/skills/software-development/browser-qa/
 ```
 
-Shell fallback, global:
+Windows 常见路径：
+
+```text
+C:\Users\<用户名>\AppData\Local\hermes\skills\software-development\browser-qa\
+```
+
+安装后应至少包含 `SKILL.md`、`evals/` 和 `scripts/`。
+
+### OpenCode
+
+全局安装目录：
+
+```text
+~/.config/opencode/skills/browser-qa/
+```
+
+项目安装目录：
+
+```text
+.opencode/skills/browser-qa/
+```
+
+## 使用示例
+
+```text
+帮我跑一次浏览器 QA。先确认项目部署方式和测试账号来源，
+再检查登录、主导航、Console error 和失败的 API 请求。
+```
+
+```text
+Docker 显示服务都起来了，但页面是空白。
+请判断是前端路由、API Base URL、CORS 还是后端错误。
+```
+
+```text
+后台桌面端正常，但移动端抽屉和弹窗有问题。
+请用移动视口验证，保存证据并给出可复现步骤。
+```
+
+```text
+重新 QA 这个项目。优先复用已有 .browser-qa/profile.json，
+只刷新过期配置，不要重新猜环境。
+```
+
+## 强制就绪门禁
+
+在第一次浏览器导航前，以下项目必须是 `READY` 或明确为 `N/A`：
+
+| 门禁 | 必须具备的证据 |
+| --- | --- |
+| 项目根目录 | 已定位仓库或应用目录 |
+| QA Profile | 已加载或实际写入并回读 `.browser-qa/profile.json` |
+| 部署模式 | `local-dev`、`docker-compose` 或 `deployed`，且有项目依据 |
+| 启动命令 | 来自文档或配置，不使用猜测命令 |
+| 目标 URL | 已确认的前端 URL，不凭常见端口推断 |
+| 健康状态 | HTTP 和真实页面渲染通过，而非仅进程/容器存活 |
+| 认证 | 无需登录，或凭据/会话来源已解析 |
+| 测试范围 | 公共、认证和管理员路径已明确 |
+
+如果认证信息最终无法获取，可以继续测试**已独立验证的公共页面**，但认证范围必须标记为 `BLOCKED`，不能写成通过。
+
+## 项目 QA Profile
+
+默认文件：
+
+```text
+.browser-qa/
+├── profile.json     # 非敏感 QA 配置，允许纳入版本控制
+├── env.example      # 可选，只保存变量名和占位符
+├── env.local        # 可选，本地秘密，必须被 Git 忽略
+└── runs/            # 可选，每轮 QA 的脱敏报告和证据
+```
+
+Profile 可以保存：
+
+- 部署模式、工作目录、启动/停止/健康检查命令
+- 前端、后端、文档服务的 URL 和路径
+- 登录路径、公共/认证/管理员冒烟路径
+- 凭据的**来源引用**，例如 `QA_ADMIN_PASSWORD`
+- 日志命令、viewport、发现证据和最后验证时间
+- 生产安全策略与资源清理策略
+
+Profile **不得保存**密码、Token、Cookie、Authorization Header、私钥或其他生产秘密。
+
+首次生成模板：
 
 ```bash
-git clone https://github.com/tchivs/browser-qa-skill.git
-mkdir -p ~/.config/opencode/skills/browser-qa
-cp browser-qa-skill/browser-qa/SKILL.md ~/.config/opencode/skills/browser-qa/SKILL.md
-cp -R browser-qa-skill/browser-qa/evals ~/.config/opencode/skills/browser-qa/evals
+node browser-qa/scripts/create-profile-template.mjs \
+  --mode docker-compose \
+  --environment local
 ```
 
-Shell fallback, project:
+模板故意处于 `blocked` 状态。完成真实项目发现并替换 TODO 后再校验：
 
 ```bash
-git clone https://github.com/tchivs/browser-qa-skill.git /tmp/browser-qa-skill
-mkdir -p .opencode/skills/browser-qa
-cp /tmp/browser-qa-skill/browser-qa/SKILL.md .opencode/skills/browser-qa/SKILL.md
-cp -R /tmp/browser-qa-skill/browser-qa/evals .opencode/skills/browser-qa/evals
+node browser-qa/scripts/validate-profile.mjs \
+  --profile .browser-qa/profile.json
 ```
 
-## Use
+## 安全策略
 
-Ask your coding agent:
+- `production` 默认只允许只读冒烟检查。
+- 未获明确授权时，不创建、修改或删除真实数据，不下单、不发信、不注册真实账号、不上传敏感文件。
+- 不自动执行数据库重置、reseed、迁移、`docker compose down -v` 或停止原本已运行的共享服务。
+- 不在命令行参数、报告、截图、Console、Network 或 Git Diff 中暴露凭据。
+- local、staging、production 使用隔离的浏览器会话，禁止混用 Cookie。
+- 重试仅适用于安全、幂等步骤；首次失败后重试成功仍应标记为潜在 `FLAKY`。
 
-```text
-Run a browser QA pass on this dev deployment. Check login, navigation, console errors, and failed API requests.
-```
+## 能发现什么问题
 
-```text
-Docker says all services are up, but the page is blank. Find out whether it is a frontend, API, or backend problem.
-```
+- 容器健康但前端页面空白
+- 登录跳转失效、会话未写入或权限错误
+- API Base URL 配错，出现 `/api/api/...`
+- CORS、代理、前后端契约或环境变量问题
+- UI 静默失败，但 Console/Network 已报错
+- 移动端弹窗被视口或软键盘裁剪
+- 侧边栏、抽屉和 Overlay 的层级问题
+- 表格、Tab Bar 和长文本在小屏溢出
+- 按钮、链接、输入框缺少可访问名称或 Label
+- 后端 500 没有清晰反馈到 UI
 
-```text
-The admin page works on desktop, but the mobile drawer and modal feel broken. Verify the mobile flow and report issues.
-```
+## 辅助脚本
 
-The skill will guide the agent to discover the app, open it in a real browser, inspect rendered UI, check network/console failures, correlate logs, and return a concise QA report.
-
-## What it catches
-
-- Blank pages hidden behind "healthy" containers
-- Broken login redirects and missing tokens
-- Wrong API base URLs and `/api/api/...` style mistakes
-- UI flows that silently fail without a visible error
-- Mobile dialogs clipped by the viewport or keyboard
-- Sidebars, drawers, and overlays with broken z-index behavior
-- Tables and tab bars that overflow on small screens
-- Buttons, links, and inputs without accessible names or labels
-- Backend 500s that never surface clearly in the UI
-
-## Project QA Profile
-
-Browser QA now uses a **fail-closed readiness gate**. Before opening the browser, the agent must identify the project root, deployment mode, exact start/health commands, verified frontend URL, authentication requirements, credential sources, and QA scope. Missing deployment or authentication facts must be discovered or reported as blocked—not guessed.
-
-Most QA skills waste time rediscovering the same app every run. `browser-qa` uses a project-local profile instead.
-
-On first run, it infers the app from files such as:
-
-- `README.md`
-- `package.json`
-- `pnpm-workspace.yaml`
-- `docker-compose.yml`
-- `.env.example`
-- `vite.config.*`, `next.config.*`, `nx.json`
-
-Then it saves non-secret facts to:
-
-```text
-.browser-qa/profile.json
-```
-
-The profile stores URLs, health checks, service names, login paths, smoke paths, and credential **environment variable names**. It must not store passwords, tokens, cookies, or production secrets.
-
-Future runs load the profile first and only refresh discovery when files changed, URLs are stale, or the user explicitly asks to rediscover the app.
-
-For optional local credential persistence, the profile stores only source references. Literal credentials may go only in a user-authorized `.browser-qa/env.local` that is gitignored; `.browser-qa/env.example` contains names/placeholders. Production QA is read-only by default, browser sessions are isolated per environment, and each run records evidence plus cleanup/retry outcomes.
-
-## Helper scripts
-
-The bundled scripts are dependency-free Node.js utilities for deterministic checks. They do not run browser automation and do not install global packages.
-
-Create a profile template:
+这些脚本不执行浏览器操作，也不会静默安装全局包。
 
 ```bash
+# 创建一个默认阻塞的 Profile 模板
 node browser-qa/scripts/create-profile-template.mjs --mode docker-compose
-```
 
-Validate a project profile:
-
-```bash
+# 严格校验项目 Profile
 node browser-qa/scripts/validate-profile.mjs --profile .browser-qa/profile.json
-```
 
-Check this skill repository before publishing:
+# 运行 Profile 校验器回归测试
+node browser-qa/scripts/test-profile-validator.mjs
 
-```bash
+# 发布前检查 Skill 仓库
 node browser-qa/scripts/doctor.mjs
 ```
 
-## How it works
+## 浏览器工具
 
-```text
-discover project → create/reuse QA profile → health check services
-→ open browser → click critical flows → inspect console/network
-→ correlate logs → report what passed, failed, and remains risky
-```
-
-The skill prefers [`agent-browser`](https://www.npmjs.com/package/agent-browser) for browser interaction, but it should not assume the CLI is already installed or silently install global packages.
-
-The agent should check first:
+Skill 优先使用 [`agent-browser`](https://www.npmjs.com/package/agent-browser)，但不会假设它已经安装，也不会在未经允许时静默全局安装。
 
 ```bash
 command -v agent-browser
-```
-
-If it is installed, the agent should load the live CLI guide before browser actions:
-
-```bash
 agent-browser skills get core
 ```
 
-If it is missing, install it only when the user explicitly asks to set up browser QA tooling, or fall back to an existing project Playwright workflow when available. Playwright is also the better path when the user asks to create durable E2E tests.
+如果项目已经具备 Playwright 工作流，可以复用；需要生成长期维护的 E2E 测试代码时，也应优先采用 Playwright 专项方案。
 
-## Skill handoffs
+## 专项 Skill 转交
 
-`browser-qa` is the orchestrator. It should hand off when the task becomes specialized:
-
-These companion skills are optional. You do not need to install them before using `browser-qa`; the skill should still run generic browser QA without them.
-
-| Need | Better follow-up skill |
+| 后续需求 | 更合适的专项 Skill |
 | --- | --- |
-| Write durable Playwright tests | `playwright-best-practices` |
-| Design an E2E test strategy | `e2e-testing-patterns` |
-| Run a full a11y/responsive/performance audit | `audit` |
-| Check React code health after fixes | `react-doctor` |
-| Fix React rendering or bundle performance | `react-performance-optimization` |
-| Fix Tailwind v4 or shadcn/ui issues | `tailwind-v4-shadcn`, `shadcn-ui` |
-| Repair responsive layout | `adapt` |
-| Harden edge cases, overflow, i18n, errors | `harden` |
-| Polish visual details | `polish` |
+| 编写长期维护的 Playwright 测试 | `playwright-best-practices` |
+| 设计 E2E 测试策略 | `e2e-testing-patterns` |
+| 完整无障碍、响应式或性能审计 | `audit` |
+| React 修改后的代码健康检查 | `react-doctor` |
+| 响应式布局修复 | `adapt` |
+| 边界情况、溢出和错误状态加固 | `harden` |
+| 最终视觉优化 | `polish` |
 
-## Repository layout
+这些是可选增强，不是运行通用 Browser QA 的前置依赖。
+
+## 仓库结构
 
 ```text
 browser-qa-skill/
 ├── browser-qa/
 │   ├── SKILL.md
-│   ├── evals/
-│   │   └── evals.json
+│   ├── evals/evals.json
 │   └── scripts/
 │       ├── create-profile-template.mjs
-│       ├── doctor.mjs
+│       ├── validate-profile.mjs
 │       ├── test-profile-validator.mjs
-│       └── validate-profile.mjs
-├── README.md
-├── README.zh-CN.md
+│       └── doctor.mjs
+├── README.md          # 中文主文档
+├── README.en.md       # English documentation
 ├── LICENSE
 └── .gitignore
 ```
 
-The skill lives in `browser-qa/SKILL.md` so the directory name matches `name: browser-qa`, which keeps strict skill importers happy.
-
-## Publish / ranking
-
-For skill.sh-style discovery, a public GitHub repo plus installs through the skills CLI may be enough. When users run:
+## 开发与验证
 
 ```bash
-npx skills add tchivs/browser-qa-skill --skill browser-qa
+node browser-qa/scripts/doctor.mjs
+node browser-qa/scripts/test-profile-validator.mjs
+node --check browser-qa/scripts/create-profile-template.mjs
+node --check browser-qa/scripts/validate-profile.mjs
 ```
 
-the skills ecosystem may use anonymous install telemetry to discover the skill and rank it by installation count. In that model, there is no separate manual upload step: keep the repo public, make the skill installable, share the install command, and installs drive visibility.
-
-If a registry also supports Add Skills / Import Repository, paste this repo URL as an optional extra step:
-
-```text
-https://github.com/tchivs/browser-qa-skill
-```
-
-## Contributing
-
-Issues and PRs are welcome. Good improvements include:
-
-- better browser QA heuristics
-- more realistic eval prompts
-- clearer report templates
-- additional project profile fields that do not store secrets
-- compatibility notes for more agent runtimes
+欢迎提交 Issue 和 PR。优先考虑：更真实的 Eval、更多框架发现规则、更严格的秘密脱敏，以及可机器验证的报告契约。
 
 ## License
 
-MIT
+[MIT](./LICENSE)
