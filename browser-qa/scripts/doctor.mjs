@@ -83,7 +83,7 @@ async function checkDocs() {
     "npx skills add tchivs/browser-qa-skill --skill browser-qa",
     "README.en.md",
     "browser-qa/SKILL.md",
-    "强制就绪门禁",
+    "QA 前必须确认什么",
     "Profile%20Schema-v4",
     "Hermes%20Agent-ready"
   ]) {
