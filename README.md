@@ -1,6 +1,6 @@
 # browser-qa
 
-> 给 Web 项目做真实浏览器 QA 的 Agent Skill。它先确认**怎么启动、测哪个地址、能否登录**，再开始点页面。
+> 先探索，再记住。每次成功 QA 都会沉淀为可复用流程，稳定后生成待审查的回归脚本。
 
 <p>
   <a href="https://github.com/tchivs/browser-qa-skill/stargazers"><img src="https://img.shields.io/github/stars/tchivs/browser-qa-skill?style=flat-square&logo=github&label=Stars" alt="GitHub Stars"></a>
