@@ -1,94 +1,131 @@
 ---
 name: browser-qa
-description: General browser QA orchestrator for web apps and local dev stacks. Use this skill whenever the user asks to verify a website or app in the browser, click through pages, test login or authenticated flows, inspect UI bugs, validate responsive/mobile behavior, check modal or drawer interactions, review accessibility issues, inspect browser console or network errors, verify Docker Compose or dev-server deployments, or run regression QA after frontend/backend changes. It is the right starting point even when the user does not name a framework, because it can discover the app profile once and then reuse it across future QA runs.
+description: "Use whenever the user asks to QA, test, verify, click through, dogfood, smoke-test, or regression-test a website/web app; check login, admin/authenticated flows, responsive UI, browser console/network errors; or validate a local dev server, Docker Compose stack, staging/production deployment, frontend URL, or API-backed UI. Mandatory orchestrator: discover and persist the project QA profile, deployment method, URLs, health checks, and credential sources before opening the browser. Never guess startup commands, URLs, accounts, or passwords."
+version: 2.0.0
+author: tchivs
 license: MIT
-compatibility: opencode, claude-code, codex, cursor
+compatibility: hermes-agent, opencode, claude-code, codex, cursor
+platforms: [linux, macos, windows]
 metadata:
-  category: browser-qa
-  tools: agent-browser, docker, playwright
-allowed-tools: Bash(agent-browser:*), Bash(npx agent-browser:*), Bash(curl:*), Bash(ss:*), Bash(docker:*), Bash(docker-compose:*), Bash(npm:*), Bash(npx:*), Bash(pnpm:*), Bash(node:*), Bash(python:*), Bash(grep:*), Bash(rg:*), Bash(cat:*), Bash(ls:*), Bash(find:*), Bash(head:*), Bash(tail:*), Bash(jq:*), Bash(awk:*), Bash(sed:*), Bash(echo:*), Bash(mkdir:*), Bash(cp:*), Bash(mv:*), Bash(touch:*), Bash(printf:*), Bash(open:*), Bash(xdg-open:*), Bash(kill:*)
+  hermes:
+    tags: [browser, qa, web, login, credentials, docker-compose, deployment, regression]
+    related_skills: [dogfood, systematic-debugging]
 ---
 
-# Browser QA
+# Browser QA Orchestrator
 
-Use this skill as a browser QA orchestrator, not as a framework-specific test author.
+## Overview
 
-The goal is to prove that a web app is usable from the browser, not merely that the code compiles or that services are running.
+Run browser QA only after proving **what to deploy, where it is reachable, and how authentication is obtained**. The browser is the execution phase, not the discovery mechanism.
 
-## Browser automation tool
+This skill has a hard readiness gate:
 
-Prefer the `agent-browser` CLI for browser interaction, snapshots, network inspection, and exploratory QA.
-
-Do not assume `agent-browser` is installed. Check first:
-
-```bash
-command -v agent-browser
+```text
+project discovery → persisted QA profile → deployment/health proof
+→ credential resolution → browser execution → evidence/report
 ```
 
-If it is missing, do not silently install global packages. Tell the user it is missing and either:
+**Hard rule:** do not open the app or begin authenticated QA while deployment mode, target URL, or required credentials are unresolved. Never invent defaults. Public-route QA may continue only when its target is independently verified; report authenticated routes as blocked.
 
-- ask them to install it with their preferred package manager,
-- run an explicit install command only if the user asked you to set up browser QA tooling,
-- or fall back to an existing project Playwright workflow when available.
+## When to Use
 
-Before running browser commands, load the installed CLI's live usage guide so command syntax matches the local version:
+Use for any request that means:
 
-```bash
-agent-browser skills get core
+- QA/test/verify/check/dogfood a website or web app
+- test login, admin, authenticated, checkout, form, navigation, modal, or responsive flows
+- inspect console errors, failed browser requests, blank pages, or UI/backend integration failures
+- verify local dev, Docker Compose, preview, staging, or production deployment
+- run browser regression after frontend/backend changes
+
+Do not use as the primary workflow for unit tests or for authoring a durable Playwright suite; hand those off after exploratory QA establishes the correct environment.
+
+## Non-Negotiable Readiness Gate
+
+Before the first browser navigation, all applicable rows must be `READY` or explicitly `N/A`:
+
+| Gate | Required proof |
+|---|---|
+| Project root | Repository/project root identified |
+| QA profile | `.browser-qa/profile.json` loaded or newly written |
+| Deployment mode | One of `local-dev`, `docker-compose`, or `deployed`; supported by project evidence |
+| Start command | Exact command from project docs/config, or `N/A` for an already deployed target |
+| Target URL | Exact frontend URL, not an inferred port with no evidence |
+| Health | URL and required services actually respond |
+| Authentication | `N/A`, or login path plus resolvable credential source/session setup |
+| Scope | Public/authenticated routes or critical flows identified |
+
+If a required gate is unresolved:
+
+1. continue deterministic discovery;
+2. do not guess;
+3. ask the user only for the irretrievable missing fact;
+4. mark affected QA scope `BLOCKED` rather than pretending it was tested.
+
+## Project-Local Artifacts
+
+Use these project-local files:
+
+```text
+.browser-qa/
+├── profile.json          # required, non-secret QA contract
+├── env.example           # optional credential variable names/placeholders
+└── env.local             # optional secrets, local-only and gitignored
 ```
 
-Use Playwright-based helpers only when the user asks for test code, when `agent-browser` is unavailable, or when a project already has a Playwright workflow that should be reused.
-
-## Operating model
-
-This skill works in two phases:
-
-1. **Discovery**: infer the app profile once for the current project and cache it locally.
-2. **Reuse**: on future runs, load the cached profile first and only refresh discovery if the project changed or the profile is stale.
-
-This avoids re-reading README files and config files on every QA run.
-
-## Project QA profile
-
-Before expensive discovery, look for a project-local profile in this order:
+Search for an existing profile in this order:
 
 1. `.browser-qa/profile.json`
 2. `.opencode/browser-qa.json`
-3. `.browser-qa.md`
+3. `.browser-qa.md` (legacy; migrate useful facts into the JSON profile)
 
-If a profile exists and is still valid, treat it as the source of truth.
+### Persistence is mandatory
 
-Refresh discovery only when:
+When no valid profile exists, discovery is incomplete until `.browser-qa/profile.json` has been written and read back successfully. Do not merely describe what should be saved.
 
-- the profile is missing,
-- the configured URLs are no longer reachable,
-- the project fingerprint changed,
-- or the user explicitly asks to rediscover the app.
+After discovery, deployment verification, or corrected configuration, update the profile immediately so later QA runs do not repeat or forget the result. Preserve user-maintained notes and do not overwrite a valid profile with a generic template.
 
-### What the profile should capture
+If the current tool/runtime cannot write project files, state that persistence is blocked and do not claim the environment has been saved.
 
-Store only non-secret facts:
+### Secret handling
 
-- preferred run mode: local dev server or Docker Compose
-- health-check commands
-- frontend URLs
-- backend/API URLs
-- login paths
-- docs paths
-- public and authenticated smoke paths
-- known service names for logs
-- selector or locator hints when useful
-- environment-variable names for credentials, never the secret values
+`profile.json` stores **references**, never secret values. It may contain:
 
-### Example profile shape
+- environment variable names such as `QA_ADMIN_USERNAME`
+- local secret file path such as `.browser-qa/env.local`
+- setup command or documented seed account location
+- login/session setup instructions that contain no secret
+
+Never place passwords, tokens, cookies, API keys, or production secrets in `profile.json`, logs, screenshots, commits, or reports.
+
+If the user explicitly wants local credential persistence:
+
+1. create/use `.browser-qa/env.local`;
+2. add `.browser-qa/env.local` to `.gitignore` before writing a secret;
+3. create `.browser-qa/env.example` containing names/placeholders only;
+4. never print secret values back in the final report.
+
+Do not create or store plaintext credentials without user authorization. Prefer existing environment variables or secret managers.
+
+## Required Profile Contract
+
+Use at least this shape; add project-specific fields when useful:
 
 ```json
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "project_name": "example-app",
+  "project_root": ".",
+  "environment": "local",
+  "safety": {
+    "destructive_actions_allowed": false,
+    "test_data_prefix": "qa-"
+  },
   "preferred_mode": "docker-compose",
   "runtime": {
+    "working_directory": ".",
+    "cleanup_policy": "stop-started",
     "start_commands": ["docker compose up -d"],
+    "stop_commands": ["docker compose down"],
     "health_commands": ["docker compose ps"]
   },
   "services": [
@@ -96,174 +133,197 @@ Store only non-secret facts:
       "name": "web",
       "kind": "frontend",
       "url": "http://127.0.0.1:5173",
+      "health_path": "/",
       "login_path": "/signin"
     }
   ],
   "auth": {
-    "has_login_flow": true,
+    "required": true,
+    "strategy": "form",
     "credential_sources": {
-      "username": "ADMIN_USERNAME",
-      "password": "ADMIN_INITIAL_PASSWORD"
-    }
+      "username": {"type": "env", "name": "QA_ADMIN_USERNAME"},
+      "password": {"type": "env", "name": "QA_ADMIN_PASSWORD"}
+    },
+    "secret_file": ".browser-qa/env.local",
+    "seed_or_setup_command": null
   },
   "qa_paths": {
     "public": ["/", "/signin"],
-    "authenticated": ["/dashboard"]
+    "authenticated": ["/dashboard"],
+    "admin": []
   },
-  "fingerprints": {
-    "README.md": "sha256:...",
-    "package.json": "sha256:...",
-    "docker-compose.yml": "sha256:...",
-    ".env.example": "sha256:..."
-  }
+  "log_sources": {
+    "commands": ["docker compose logs --tail=200 web api"]
+  },
+  "discovery": {
+    "status": "ready",
+    "evidence": ["README.md", "compose.yaml", ".env.example"],
+    "last_discovered_at": "ISO-8601 timestamp",
+    "last_verified_at": "ISO-8601 timestamp"
+  },
+  "fingerprints": {},
+  "notes": []
 }
 ```
 
-## Discovery workflow
+Use `discovery.status` values: `ready`, `partial`, or `blocked`. Browser QA must not start when a required gate leaves status `partial` or `blocked`.
 
-When no valid profile exists, inspect the project in this order:
+## Discovery Workflow
 
-1. `README.md`
-2. `package.json`
-3. `pnpm-workspace.yaml` or workspace config
-4. `docker-compose.yml` and overrides
-5. `.env.example`
-6. framework config files such as `vite.config.*`, `next.config.*`, `nx.json`
+### 1. Locate instructions and deployment evidence
 
-Use this discovery to infer the minimum viable QA map:
+Inspect, when present, in this order:
 
-- how to start the app
-- where the browser entry points are
-- which URLs should be smoke-tested
-- which login flow exists
-- whether Docker Compose or local dev is the intended path
+1. `AGENTS.md`, `CLAUDE.md`, `.cursorrules`, project-specific agent instructions
+2. `README*`, `docs/`, setup/deployment/runbooks
+3. `package.json`, lockfiles, workspace files, Makefile/Taskfile
+4. `compose.yaml`, `compose.yml`, `docker-compose*.yml`, Dockerfiles
+5. `.env.example`, `.env.sample`, configuration schemas (do not expose `.env` secrets)
+6. framework configs (`vite`, `next`, `nuxt`, `angular`, proxies/base URLs)
+7. CI/CD and deployment manifests when testing a deployed environment
+8. seed scripts, fixtures, migrations, test users, auth docs
 
-Then save the profile locally and use it for the rest of the session.
+Record the exact evidence that supports each profile value. A plausible command or common port is not evidence.
 
-## Core QA flow
+### 2. Choose deployment mode from evidence
 
-1. Run a quick health check for the expected services.
-2. Open the primary user-facing routes in a real browser.
-3. Wait for the app to finish rendering before inspecting the page.
-4. Exercise the critical flows:
-   - login or sign-in
-   - navigation
-   - forms and validation
-   - modal/dialog/sheet behavior
-   - table and list rendering
-   - mobile/responsive layout
-5. Watch for console errors, failed requests, or backend failures.
-6. Report what passed, what failed, and what remains risky.
+- **deployed:** user supplied a URL or project deployment metadata identifies the intended environment.
+- **docker-compose:** compose config is documented as the normal integrated-app path and exposes the required frontend/services.
+- **local-dev:** package/task scripts document the intended dev workflow and dependencies are available.
 
-## Selector and interaction rules
+When multiple modes are available, prefer an already-running verified target, then the project's documented default. Do not start both. If modes imply materially different data/auth behavior and intent is unclear, ask the user.
 
-Prefer selectors in this order:
+### 3. Resolve URL and health checks
 
-1. accessible role and name
-2. label text
-3. visible text
-4. stable test IDs
-5. CSS selectors only as a fallback
+Derive URLs from explicit config, compose port mappings, runtime output, or project docs. Start services only with the discovered command. Then prove readiness using service status plus HTTP checks; a running process/container alone is insufficient.
 
-Avoid brittle selectors when a semantic one exists.
+Update the profile only with verified URLs. If startup fails, inspect logs and fix/return the blocker before browser QA.
 
-## Waiting rules
+### 4. Resolve authentication before authenticated QA
 
-Do not rely on fixed sleeps for normal app readiness.
+Search for credential sources in this order:
 
-Prefer:
+1. already-exported QA/test environment variables named by the project
+2. `.browser-qa/env.local` (load without printing)
+3. documented development/test accounts
+4. seed/bootstrap scripts and their documented output
+5. test fixtures or authentication setup commands
+6. an existing reusable browser storage state/session
+7. user-provided credentials
 
-- network idle
-- URL changes
-- element visibility
-- enabled/disabled state changes
-- explicit API response completion when relevant
+Do not infer passwords from project names, usernames, or common defaults. Do not reset/create accounts unless the user authorized that side effect.
 
-Fixed waits are acceptable only when the app has a real animation or transition delay that cannot be observed another way.
+If a source is known but its value is unavailable, record the variable/source name in the profile and ask only for that missing value. Continue verified public QA if useful; authenticated scope remains `BLOCKED`.
 
-## Mobile and responsive checks
+### 5. Persist and validate
 
-Always check important flows at a narrow viewport when the app is meant for general users.
+Write `.browser-qa/profile.json`, then read it back and verify:
 
-Focus on:
+- required fields are populated;
+- commands and URLs match discovered evidence;
+- credential entries are references, not values;
+- `discovery.status` reflects actual readiness;
+- secret files are gitignored;
+- profile secrets have not leaked into Git status/diff.
 
-- sidebar or drawer behavior
-- dialog clipping
-- touch target size
-- horizontal overflow
-- text wrapping
-- sticky headers and overlays
-- tab bars or segmented controls that may overflow
+Only after this succeeds may browser execution begin.
 
-## Accessibility smoke checks
+## Reuse and Staleness
 
-When the app has interactive UI, quickly verify:
+On later runs, load the profile **before** broad repository discovery. Revalidate only what can drift:
 
-- buttons and links have accessible names
-- inputs have labels
-- dialogs can be opened and closed cleanly
-- focus is visible
-- keyboard-only interaction works for the main path
-- headings and landmarks are not obviously broken
+- project root still matches;
+- target URL responds;
+- start/health commands still exist;
+- credential source is resolvable without revealing it;
+- fingerprints for deployment/auth source files have not changed.
 
-If the user asks for a formal accessibility audit, hand off to the `audit` skill rather than expanding this into a full audit checklist.
+Refresh discovery when the profile is missing, partial/blocked, URLs fail, relevant fingerprints change, or the user requests another environment. Update `last_verified_at` after successful checks.
 
-## Network and log triage
+## Safety and Environment Policy
 
-If the UI is silent, broken, or stuck:
+Classify the target before actions:
 
-1. inspect browser console errors
-2. inspect failed network requests
-3. inspect backend and frontend logs
-4. confirm service ports and process state
+- `local`, `dev`, `test`, `preview`: normal QA actions are allowed within user scope.
+- `staging`: avoid destructive workflows unless explicitly included.
+- `production`: default to read-only smoke checks. Do not submit purchases, send messages, delete/update data, create real accounts, trigger billing, upload sensitive files, or run load tests without explicit authorization.
 
-Look for common issues such as:
+Use unique synthetic test data and the least-privileged test account available. Never reuse a production administrator when a QA role exists. Redact personal data, secrets, cookies, authorization headers, and tokens from screenshots, browser/network dumps, logs, and reports.
 
-- wrong base URLs
-- missing environment variables
-- auth redirects that never complete
-- backend 500s hidden behind a generic UI error
-- stale frontend bundles or mismatched API contracts
+Do not reset databases, reseed shared environments, run migrations, stop shared services, or execute `docker compose down -v` unless explicitly authorized. Track every process/container started by QA and clean up only resources created by this run. Respect a profile field such as `runtime.cleanup_policy` (`leave-running`, `stop-started`, or `project-command`).
 
-## Reporting format
+## Run Isolation and Evidence
 
-End with a concise report that includes:
+Use a fresh browser context/profile for each environment unless the project profile explicitly points to an approved reusable storage state. Never mix local, staging, and production cookies. Clear or close temporary browser state after the run.
 
-- what was tested
-- what passed
-- what failed
-- what was fixed, if anything
-- remaining risks or untested paths
-- relevant URLs or commands if useful
+Assign a run ID and store evidence under `.browser-qa/runs/<run-id>/` when filesystem access is available. Keep at least:
 
-Keep the report factual and specific. Mention the exact screen, route, or interaction that failed.
+- `report.md` or `report.json`
+- screenshots for failures
+- sanitized console/network excerpts
+- tested route/viewport matrix
 
-## Specialist handoff matrix
+For every failure, capture route, viewport, exact steps, expected result, actual result, and supporting evidence. A retry may classify a symptom as flaky, but must not erase the first failure. Report retry count and both outcomes.
 
-Use this skill as the orchestrator. Hand off when the task becomes more specialized:
+## Browser Execution
 
-Companion skills are optional, not prerequisites. Do not block browser QA because one of these skills is not installed. If a companion skill is unavailable, continue with the generic QA workflow and mention the optional skill only when it would materially improve the follow-up work.
+After the gate is ready:
 
-- Need to write durable Playwright tests or a test suite -> `playwright-best-practices`
-- Need generic E2E testing strategy or suite structure -> `e2e-testing-patterns`
-- Need scripted local web-app automation with server lifecycle helpers -> `webapp-testing`
-- Need a technical audit across a11y, performance, responsive design, theming, and anti-patterns -> `audit`
-- Need React code health or regression checks after code changes -> `react-doctor`
-- Need React rendering or bundle performance work -> `react-performance-optimization` or `vercel-react-best-practices`
-- Need shadcn/ui or Tailwind v4 component/theming help -> `shadcn-ui` or `tailwind-v4-shadcn`
-- Need responsive layout fixes -> `adapt`
-- Need error message, empty state, or text clarity fixes -> `clarify`
-- Need robustness around edge cases, overflow, or resilience -> `harden`
-- Need final visual cleanup -> `polish`
+1. Open the verified primary frontend URL.
+2. Confirm rendered content, not only HTTP 200.
+3. Check console errors and failed network requests after navigation and significant interactions.
+4. Exercise the profile's critical public routes.
+5. If auth is required, resolve secrets privately and test login/logout/session behavior.
+6. Exercise authenticated/admin paths, navigation, forms, validation, dialogs, lists/tables, and error states in scope.
+7. Test important flows at a narrow viewport when the product supports general users.
+8. Correlate silent UI failures with frontend/backend logs.
+9. Capture reproducible evidence for each defect.
 
-## Good fit examples
+Prefer accessible role/name, labels, visible text, stable test IDs, then CSS selectors. Prefer observable readiness (URL, network, element state) over fixed sleeps.
 
-- "Check the login flow in the browser and tell me what breaks"
-- "Verify the admin UI on mobile and report layout issues"
-- "Figure out why the page is blank even though Docker says the service is up"
-- "Run a browser QA pass on this dev deployment"
+## Reporting
 
-## Out of scope
+Lead with the verdict. Include:
 
-Do not turn this skill into a general code-generation or unit-test authoring skill.
-If the user wants to write production E2E code or configure CI, hand off to the specialized testing skills.
+- environment and exact verified URL (without secrets)
+- deployment mode and health proof
+- credential source status (`resolved`, `not required`, or `blocked`; never values)
+- tested public/authenticated/admin scope
+- passes and failures with exact routes/interactions
+- console/network/log evidence
+- blocked and untested scope
+- whether `.browser-qa/profile.json` was created or updated
+- remaining risks
+- cleanup performed and resources intentionally left running
+- flaky behavior and retry outcomes
+
+Never report authenticated QA as passed when credentials were unavailable.
+
+## Common Pitfalls
+
+1. **Browser first:** opening a guessed localhost port before discovery. Fix: enforce the readiness table.
+2. **Template theater:** generating a TODO profile but never filling or reading it back. Fix: persistence requires project-specific values and validation.
+3. **Container equals healthy:** compose says `Up`, but the frontend/API is unusable. Fix: require HTTP/render proof.
+4. **Credential guessing:** trying `admin/admin` or claiming login is impossible without searching seeds/docs/env references. Fix: follow credential-source order.
+5. **Secret leakage:** putting passwords in profile/report/Git. Fix: references in profile; optional gitignored `env.local` only with authorization.
+6. **Discovery every run:** ignoring the profile. Fix: load it first and refresh only stale fields.
+7. **Silent scope reduction:** testing public pages and omitting blocked authenticated scope. Fix: explicitly report it.
+8. **Wrong environment:** mixing local, staging, and production URLs/accounts. Fix: profile includes a named environment and one verified target.
+
+## Verification Checklist
+
+- [ ] Matching browser-QA requests loaded this orchestrator
+- [ ] Project root and instruction files identified
+- [ ] Deployment mode and exact commands supported by evidence
+- [ ] Target URL and required services verified healthy
+- [ ] Authentication marked not required or credential source resolved
+- [ ] No username/password/token was guessed or exposed
+- [ ] `.browser-qa/profile.json` written/updated and read back
+- [ ] Local secret file, if used, is gitignored and authorized
+- [ ] Browser context isolated from other environments
+- [ ] Destructive/production actions respected the safety policy
+- [ ] Browser tested rendered UI, console, network, and scoped flows
+- [ ] Authenticated scope is either tested or explicitly blocked
+- [ ] Evidence saved with secrets and personal data redacted
+- [ ] Resources started by QA were cleaned up per policy
+- [ ] Report states environment, profile persistence, evidence, retries, cleanup, and remaining risks

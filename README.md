@@ -105,6 +105,8 @@ The skill will guide the agent to discover the app, open it in a real browser, i
 
 ## Project QA Profile
 
+Browser QA now uses a **fail-closed readiness gate**. Before opening the browser, the agent must identify the project root, deployment mode, exact start/health commands, verified frontend URL, authentication requirements, credential sources, and QA scope. Missing deployment or authentication facts must be discovered or reported as blocked—not guessed.
+
 Most QA skills waste time rediscovering the same app every run. `browser-qa` uses a project-local profile instead.
 
 On first run, it infers the app from files such as:
@@ -125,6 +127,8 @@ Then it saves non-secret facts to:
 The profile stores URLs, health checks, service names, login paths, smoke paths, and credential **environment variable names**. It must not store passwords, tokens, cookies, or production secrets.
 
 Future runs load the profile first and only refresh discovery when files changed, URLs are stale, or the user explicitly asks to rediscover the app.
+
+For optional local credential persistence, the profile stores only source references. Literal credentials may go only in a user-authorized `.browser-qa/env.local` that is gitignored; `.browser-qa/env.example` contains names/placeholders. Production QA is read-only by default, browser sessions are isolated per environment, and each run records evidence plus cleanup/retry outcomes.
 
 ## Helper scripts
 
@@ -201,6 +205,7 @@ browser-qa-skill/
 │   └── scripts/
 │       ├── create-profile-template.mjs
 │       ├── doctor.mjs
+│       ├── test-profile-validator.mjs
 │       └── validate-profile.mjs
 ├── README.md
 ├── README.zh-CN.md

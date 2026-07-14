@@ -46,8 +46,16 @@ async function checkSkill() {
   }
   if (frontmatter.name !== "browser-qa") errors.push("SKILL.md frontmatter name must be browser-qa");
   if (!frontmatter.description || frontmatter.description.length < 40) errors.push("SKILL.md description must be specific and non-empty");
-  if (!content.includes("Project QA profile")) warnings.push("SKILL.md should explain Project QA profile behavior");
-  if (!content.includes("command -v agent-browser")) warnings.push("SKILL.md should check agent-browser availability before use");
+  for (const expected of [
+    "Non-Negotiable Readiness Gate",
+    "Persistence is mandatory",
+    "Safety and Environment Policy",
+    "Run Isolation and Evidence",
+    "credential source",
+    ".browser-qa/profile.json"
+  ]) {
+    if (!content.includes(expected)) errors.push(`SKILL.md missing required workflow section/text: ${expected}`);
+  }
 }
 
 async function checkEvals() {
@@ -80,10 +88,11 @@ function checkFiles() {
 }
 
 function parseFrontmatter(content) {
-  if (!content.startsWith("---\n")) return null;
-  const end = content.indexOf("\n---", 4);
+  const normalized = content.replace(/^\uFEFF/, "").replace(/\r\n/g, "\n");
+  if (!normalized.startsWith("---\n")) return null;
+  const end = normalized.indexOf("\n---", 4);
   if (end === -1) return null;
-  const raw = content.slice(4, end).trim();
+  const raw = normalized.slice(4, end).trim();
   const result = {};
   for (const line of raw.split("\n")) {
     const match = line.match(/^([A-Za-z0-9_-]+):\s*(.*)$/);
