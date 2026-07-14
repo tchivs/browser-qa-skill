@@ -67,7 +67,7 @@ async function checkEvals() {
   const evals = JSON.parse(await readFile(evalsPath, "utf8"));
   if (evals.skill_name !== "browser-qa") errors.push("evals.skill_name must be browser-qa");
   if (!Array.isArray(evals.evals) || evals.evals.length < 8) errors.push("evals.evals should contain at least eight prompts");
-  for (const script of ["create-profile-template.mjs", "validate-profile.mjs", "test-profile-validator.mjs", "create-run-manifest.mjs", "validate-run-manifest.mjs", "test-run-manifest.mjs"]) {
+  for (const script of ["create-profile-template.mjs", "validate-profile.mjs", "test-profile-validator.mjs", "create-run-manifest.mjs", "validate-run-manifest.mjs", "test-run-manifest.mjs", "learn-flow.mjs", "validate-flow.mjs", "promote-flow.mjs", "invalidate-stale-flow.mjs", "generate-playwright.mjs", "test-flow-learning.mjs"]) {
     if (!existsSync(resolve(skillDir, "scripts", script))) errors.push(`browser-qa/scripts/${script} is missing`);
   }
 }
@@ -84,7 +84,7 @@ async function checkDocs() {
     "README.en.md",
     "browser-qa/SKILL.md",
     "强制就绪门禁",
-    "Profile%20Schema-v3",
+    "Profile%20Schema-v4",
     "Hermes%20Agent-ready"
   ]) {
     if (!readme.includes(expected)) errors.push(`README.md missing expected text: ${expected}`);

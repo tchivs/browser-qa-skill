@@ -8,7 +8,7 @@
   <a href="https://github.com/tchivs/browser-qa-skill/stargazers"><img src="https://img.shields.io/github/stars/tchivs/browser-qa-skill?style=flat-square&logo=github&label=Stars" alt="GitHub Stars"></a>
   <a href="https://github.com/tchivs/browser-qa-skill/commits/main"><img src="https://img.shields.io/github/last-commit/tchivs/browser-qa-skill?style=flat-square&label=Last%20commit" alt="Last commit"></a>
   <a href="./LICENSE"><img src="https://img.shields.io/github/license/tchivs/browser-qa-skill?style=flat-square" alt="MIT License"></a>
-  <img src="https://img.shields.io/badge/Profile%20Schema-v3-2563eb?style=flat-square" alt="Profile Schema v2">
+  <img src="https://img.shields.io/badge/Profile%20Schema-v4-2563eb?style=flat-square" alt="Profile Schema v2">
   <img src="https://img.shields.io/badge/Hermes%20Agent-ready-6d28d9?style=flat-square" alt="Hermes Agent ready">
   <img src="https://img.shields.io/badge/OpenCode-ready-111827?style=flat-square" alt="OpenCode ready">
 </p>
@@ -63,6 +63,7 @@ For OpenCode, use either:
 - Persists non-secret project facts in `.browser-qa/profile.json`.
 - Separates public, authenticated, and admin readiness so unavailable credentials block only the affected scope.
 - Creates a per-run manifest with profile hash, evidence, retry history, and cleanup status.
+- Learns only verified public read-only flows and generates review-required Playwright candidates after three consistent successful runs.
 - Does not guess deployment commands, URLs, usernames, or passwords.
 - Rejects incomplete templates and unresolved placeholders.
 - Verifies HTTP and rendered UI rather than trusting process/container status.

@@ -1,7 +1,7 @@
 ---
 name: browser-qa
 description: "Use whenever the user asks to QA, test, verify, click through, dogfood, smoke-test, or regression-test a website/web app; check login, admin/authenticated flows, responsive UI, browser console/network errors; or validate a local dev server, Docker Compose stack, staging/production deployment, frontend URL, or API-backed UI. Mandatory orchestrator: discover and persist the project QA profile, deployment method, URLs, health checks, and credential sources before opening the browser. Never guess startup commands, URLs, accounts, or passwords."
-version: 3.0.0
+version: 4.0.0
 author: tchivs
 license: MIT
 compatibility: hermes-agent, opencode, claude-code, codex, cursor
@@ -284,6 +284,42 @@ Keep at least a report, failure screenshots, sanitized console/network excerpts,
 
 For every failure, capture route, viewport, exact steps, expected result, actual result, and supporting evidence. The default retry budget is one retry and only for idempotent actions. Never retry purchase, create, delete, update, submit, send, or other non-idempotent actions automatically. A retry may classify a symptom as `FLAKY`, but must not erase the first failure; two different outcomes are reported as `FLAKY`, not ordinary `PASS`.
 
+## Learning Loop: Explore → Verify → Generate
+
+The QA system becomes more useful only when it turns **verified observations** into reusable, safe artifacts. Do not treat an arbitrary browser transcript as a regression test.
+
+Store learned public flows under `.browser-qa/flows/<flow-id>.json`. A flow has these states:
+
+```text
+candidate → verified → stable → generated
+                    ↘ stale → candidate (after rediscovery)
+```
+
+1. **Candidate:** extract a successful, cleaned-up public run with structured `manifest.results[].steps`.
+2. **Verified:** at least two successful observations.
+3. **Stable:** at least three successful observations with the same semantic step signature and no fallback selectors.
+4. **Generated:** compile only a stable public flow to a Playwright candidate; review it before it enters CI.
+5. **Stale:** a failed replay, changed flow signature, changed target/profile, or confirmed route/API/UI change invalidates the flow. Do not keep replaying stale scripts; return to exploratory QA.
+
+Use only semantic public steps: `navigate`, role/name `click`, `expect_url`, and `expect_visible`. Do not automatically learn or generate authentication, admin, payment, send, create, delete, update, upload, or other side-effecting flows.
+
+```bash
+# Extract a candidate from a completed QA run
+node browser-qa/scripts/learn-flow.mjs   --manifest .browser-qa/runs/<run-id>/manifest.json   --flow .browser-qa/flows/public-nav.json   --id public-nav
+
+# After additional independent successful runs, promote it
+node browser-qa/scripts/promote-flow.mjs --flow .browser-qa/flows/public-nav.json
+node browser-qa/scripts/validate-flow.mjs --flow .browser-qa/flows/public-nav.json
+
+# Stable public flows may generate a review-required Playwright candidate
+node browser-qa/scripts/generate-playwright.mjs   --flow .browser-qa/flows/public-nav.json   --output .browser-qa/generated/public-nav.spec.ts
+
+# If replay fails because the app changed, invalidate rather than blindly retry
+node browser-qa/scripts/invalidate-stale-flow.mjs   --flow .browser-qa/flows/public-nav.json   --reason "navigation route changed"
+```
+
+Generated tests require `QA_BASE_URL`, are public/read-only by design, and must be reviewed before committing or enabling CI.
+
 ## Browser Execution
 
 After the gate is ready:
@@ -344,5 +380,7 @@ Never report authenticated QA as passed when credentials were unavailable.
 - [ ] Browser tested rendered UI, console, network, and scoped flows
 - [ ] Authenticated scope is either tested or explicitly blocked
 - [ ] Evidence saved with secrets and personal data redacted
+- [ ] Learned flows, if any, came from completed public runs and passed their promotion gate
+- [ ] Generated Playwright candidates were reviewed before CI/commit
 - [ ] Resources started by QA were cleaned up per policy
 - [ ] Report states environment, profile persistence, evidence, retries, cleanup, and remaining risks

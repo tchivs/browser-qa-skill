@@ -8,7 +8,7 @@
   <a href="https://github.com/tchivs/browser-qa-skill/stargazers"><img src="https://img.shields.io/github/stars/tchivs/browser-qa-skill?style=flat-square&logo=github&label=Stars" alt="GitHub Stars"></a>
   <a href="https://github.com/tchivs/browser-qa-skill/commits/main"><img src="https://img.shields.io/github/last-commit/tchivs/browser-qa-skill?style=flat-square&label=Last%20commit" alt="Last commit"></a>
   <a href="./LICENSE"><img src="https://img.shields.io/github/license/tchivs/browser-qa-skill?style=flat-square" alt="MIT License"></a>
-  <img src="https://img.shields.io/badge/Profile%20Schema-v3-2563eb?style=flat-square" alt="Profile Schema v2">
+  <img src="https://img.shields.io/badge/Profile%20Schema-v4-2563eb?style=flat-square" alt="Profile Schema v2">
   <img src="https://img.shields.io/badge/Node.js-%E2%89%A518-339933?style=flat-square&logo=nodedotjs&logoColor=white" alt="Node.js 18+">
 </p>
 
@@ -216,6 +216,38 @@ node browser-qa/scripts/validate-run-manifest.mjs \
 
 默认最多重试一次，并且只允许重试幂等操作；提交、购买、发送、创建、删除和修改操作不自动重试。首次失败后重试成功仍须标记为 `FLAKY`。
 
+## 让 QA 越测越聪明
+
+每轮 QA 的 Run Manifest 不只是报告，也是可学习的证据。Skill 可以把**完成清理、公共范围、结构化步骤且通过的运行**提取为 Flow，并逐步沉淀为回归脚本：
+
+```text
+candidate（首次发现）
+→ verified（至少 2 次成功）
+→ stable（至少 3 次同一语义路径成功）
+→ generated（生成待 Review 的 Playwright 候选脚本）
+```
+
+Flow 一旦因路由、关键 UI、接口契约或 Profile 变化而失效，应标记为 `stale` 并回到探索式 QA，而不是盲目重试旧脚本。
+
+```bash
+# 从成功 Run Manifest 学习候选流程
+node browser-qa/scripts/learn-flow.mjs \
+  --manifest .browser-qa/runs/<run-id>/manifest.json \
+  --flow .browser-qa/flows/public-nav.json \
+  --id public-nav
+
+# 连续成功后晋升和校验
+node browser-qa/scripts/promote-flow.mjs --flow .browser-qa/flows/public-nav.json
+node browser-qa/scripts/validate-flow.mjs --flow .browser-qa/flows/public-nav.json
+
+# 只允许 stable 的公共只读流程生成 Playwright 候选脚本
+node browser-qa/scripts/generate-playwright.mjs \
+  --flow .browser-qa/flows/public-nav.json \
+  --output .browser-qa/generated/public-nav.spec.ts
+```
+
+自动学习只支持公共、只读路径，使用 `navigate`、语义化 role/name 点击、URL 与可见性断言。登录、后台、下单、创建、删除、发送和上传等流程不能自动固化或生成脚本。生成的 Playwright 文件必须人工 Review 后才可提交或进入 CI。
+
 ## 安全策略
 
 - `production` 默认只允许只读冒烟检查。
@@ -256,6 +288,10 @@ node browser-qa/scripts/test-profile-validator.mjs
 node browser-qa/scripts/create-run-manifest.mjs --profile .browser-qa/profile.json
 node browser-qa/scripts/validate-run-manifest.mjs --manifest .browser-qa/runs/<run-id>/manifest.json
 node browser-qa/scripts/test-run-manifest.mjs
+
+# 学习、晋升和验证公共 Flow
+node browser-qa/scripts/validate-flow.mjs --flow .browser-qa/flows/<flow-id>.json
+node browser-qa/scripts/test-flow-learning.mjs
 
 # 发布前检查 Skill 仓库
 node browser-qa/scripts/doctor.mjs
@@ -300,6 +336,12 @@ browser-qa-skill/
 │       ├── create-run-manifest.mjs
 │       ├── validate-run-manifest.mjs
 │       ├── test-run-manifest.mjs
+│       ├── learn-flow.mjs
+│       ├── validate-flow.mjs
+│       ├── promote-flow.mjs
+│       ├── invalidate-stale-flow.mjs
+│       ├── generate-playwright.mjs
+│       ├── test-flow-learning.mjs
 │       └── doctor.mjs
 ├── README.md          # 中文主文档
 ├── README.en.md       # English documentation

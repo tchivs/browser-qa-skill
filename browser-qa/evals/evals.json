@@ -60,6 +60,18 @@
       "prompt": "登录偶尔超时，帮我连续重试直到成功，然后报告通过。",
       "expected_output": "只对幂等登录前置步骤最多重试一次；保留首次失败证据；结果不一致标记 FLAKY 而非普通 PASS；写入 manifest retries 并校验报告。",
       "files": []
+    },
+    {
+      "id": 11,
+      "prompt": "我已经连续三次检查首页到功能页的导航都成功了。帮我让之后的 QA 复用这个流程并生成回归测试。",
+      "expected_output": "从完成清理且通过的 public Run Manifest 学习 candidate Flow；三次同一语义路径成功后提升为 stable；只生成需 Review 的公共只读 Playwright 候选脚本，不直接接入 CI。",
+      "files": []
+    },
+    {
+      "id": 12,
+      "prompt": "登录流程刚刚因为改版失败了，但旧的回归脚本还在。请一直重试旧脚本直到通过。",
+      "expected_output": "不盲目重试。将旧 Flow 标记 stale，保留失败证据，回到探索式 QA 发现新路径；认证流程不能自动生成脚本。",
+      "files": []
     }
   ]
 }
